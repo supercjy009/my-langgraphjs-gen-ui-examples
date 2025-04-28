@@ -44,37 +44,37 @@ export async function executor(
   switch (numSeenPlans) {
     case 0:
       updateFileContents = await fs.readFile(
-        "agent/open-code/nodes/plan-code/step-1.txt",
+        "src/agent/open-code/nodes/plan-code/step-1.txt",
         "utf-8",
       );
       break;
     case 1:
       updateFileContents = await fs.readFile(
-        "agent/open-code/nodes/plan-code/step-2.txt",
+        "src/agent/open-code/nodes/plan-code/step-2.txt",
         "utf-8",
       );
       break;
     case 2:
       updateFileContents = await fs.readFile(
-        "agent/open-code/nodes/plan-code/step-3.txt",
+        "src/agent/open-code/nodes/plan-code/step-3.txt",
         "utf-8",
       );
       break;
     case 3:
       updateFileContents = await fs.readFile(
-        "agent/open-code/nodes/plan-code/step-4.txt",
+        "src/agent/open-code/nodes/plan-code/step-4.txt",
         "utf-8",
       );
       break;
     case 4:
       updateFileContents = await fs.readFile(
-        "agent/open-code/nodes/plan-code/step-5.txt",
+        "src/agent/open-code/nodes/plan-code/step-5.txt",
         "utf-8",
       );
       break;
     case 5:
       updateFileContents = await fs.readFile(
-        "agent/open-code/nodes/plan-code/step-6.txt",
+        "src/agent/open-code/nodes/plan-code/step-6.txt",
         "utf-8",
       );
       break;
