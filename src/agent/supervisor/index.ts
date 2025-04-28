@@ -20,7 +20,13 @@ export const ALL_TOOL_DESCRIPTIONS = `- stockbroker: can fetch the price of a ti
 
 function handleRoute(
   state: SupervisorState,
-): "stockbroker" | "tripPlanner" | "openCode" | "orderPizza" | "generalInput" | "writerAgent" {
+):
+  | "stockbroker"
+  | "tripPlanner"
+  | "openCode"
+  | "orderPizza"
+  | "generalInput"
+  | "writerAgent" {
   return state.next;
 }
 
