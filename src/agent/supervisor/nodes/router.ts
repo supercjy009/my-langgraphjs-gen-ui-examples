@@ -19,6 +19,7 @@ ${ALL_TOOL_DESCRIPTIONS}
         "openCode",
         "orderPizza",
         "generalInput",
+        "writerAgent",
       ])
       .describe(routerDescription),
   });

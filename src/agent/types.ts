@@ -13,7 +13,12 @@ export const GenerativeUIAnnotation = Annotation.Root({
   >({ default: () => [], reducer: uiMessageReducer }),
   timestamp: Annotation<number>,
   next: Annotation<
-    "stockbroker" | "tripPlanner" | "openCode" | "orderPizza" | "generalInput"
+    | "stockbroker"
+    | "tripPlanner"
+    | "openCode"
+    | "orderPizza"
+    | "writerAgent"
+    | "generalInput"
   >(),
 });
 
