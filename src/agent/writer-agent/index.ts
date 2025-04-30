@@ -77,7 +77,7 @@ async function writer(
           name: "writer",
           props: { ...tool, isGenerating: true },
         },
-        { message },
+        { message, merge: true },
       );
     }
   }
@@ -100,32 +100,21 @@ async function writer(
   let contentMessage: AIMessageChunk | undefined;
   for await (const chunk of contentStream) {
     contentMessage = contentMessage?.concat(chunk) ?? chunk;
+    const content = contentMessage?.text ?? "";
 
     ui.push(
       {
         id: artifactId,
         name: "writer",
-        props: {
-          ...findTool(message, "create_text_document")?.args,
-          content: contentMessage?.text ?? "",
-          isGenerating: true,
-        },
+        props: { content, isGenerating: true },
       },
-      { message },
+      { message, merge: true },
     );
   }
 
   ui.push(
-    {
-      id: artifactId,
-      name: "writer",
-      props: {
-        ...findTool(message, "create_text_document")?.args,
-        content: contentMessage?.text ?? "",
-        isGenerating: false,
-      },
-    },
-    { message },
+    { id: artifactId, name: "writer", props: { isGenerating: false } },
+    { message, merge: true },
   );
 
   for (const toolCall of message?.tool_calls ?? []) {
