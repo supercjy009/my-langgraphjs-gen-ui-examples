@@ -1,5 +1,6 @@
 import { useArtifact } from "../utils/use-artifact";
 import { useEffect, useRef, useState } from "react";
+import { LoaderIcon } from "lucide-react";
 
 export function Writer(props: {
   title?: string;
@@ -33,7 +34,12 @@ export function Writer(props: {
         <p className="font-medium">{props.title}</p>
         <p className="text-sm text-gray-500">{props.description}</p>
 
-        {props.isGenerating && <p>Generating...</p>}
+        {props.isGenerating && (
+          <p className="flex items-center gap-2">
+            <LoaderIcon className="animate-spin" />
+            <span>Generating...</span>
+          </p>
+        )}
       </div>
 
       <Artifact title={props.title}>

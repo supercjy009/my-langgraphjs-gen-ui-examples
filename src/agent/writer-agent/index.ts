@@ -1,100 +1,95 @@
 import {
-  Annotation,
-  LangGraphRunnableConfig,
   START,
   StateGraph,
+  type LangGraphRunnableConfig,
 } from "@langchain/langgraph";
-import { GenerativeUIAnnotation } from "../types";
 import { ChatAnthropic } from "@langchain/anthropic";
-import type ComponentMap from "../../agent-uis/index";
 import { typedUi } from "@langchain/langgraph-sdk/react-ui/server";
+import {
+  isAIMessage,
+  isBaseMessage,
+  type AIMessageChunk,
+  type BaseMessageLike,
+} from "@langchain/core/messages";
 import { v4 as uuidv4 } from "uuid";
-import { AIMessageChunk, type BaseMessageLike } from "@langchain/core/messages";
-import { StructuredToolParams } from "@langchain/core/tools";
 import { z } from "zod";
 
-const AgentState = Annotation.Root({
-  ...GenerativeUIAnnotation.spec,
-});
+import { findToolCall } from "../find-tool-call";
+import { GenerativeUIAnnotation } from "../types";
 
-// TODO: should we upstream this to @langchain/core?
-const getFindTypedTool = <TTools extends StructuredToolParams[]>(_: TTools) => {
-  return <T extends TTools[number]["name"]>(
-    message: AIMessageChunk | undefined,
-    toolName: T,
-  ) => {
-    type SchemaRaw = TTools[number]["schema"] & { name: T };
-    type Args = SchemaRaw extends z.ZodSchema
-      ? z.infer<SchemaRaw>
-      : Record<string, any>;
+import type ComponentMap from "../../agent-uis/index";
 
-    const toolCall = message?.tool_calls?.find(
-      (tool) => tool.name === toolName,
-    ) as { name: string; args: Partial<Args>; id?: string } | undefined;
+const MODEL_NAME = "claude-3-5-sonnet-latest";
 
-    return toolCall;
-  };
-};
-
-const typedTools = <TTool extends StructuredToolParams>(tools: TTool[]) => {
-  return [tools, getFindTypedTool(tools)] as const;
-};
-
-async function writer(
-  state: typeof AgentState.State,
+async function prepare(
+  state: typeof GenerativeUIAnnotation.State,
   config: LangGraphRunnableConfig,
-): Promise<typeof AgentState.Update> {
+): Promise<typeof GenerativeUIAnnotation.Update> {
   const ui = typedUi<typeof ComponentMap>(config);
-  const [tools, findTool] = typedTools([
-    {
-      name: "create_text_document",
-      description:
-        "Prepare a text document for the user with a short title and description for browsing purposes.",
-      schema: z.object({ title: z.string(), description: z.string() }),
-    } as const,
-  ]);
-
-  const messages: BaseMessageLike[] = state.messages.slice();
+  const model = new ChatAnthropic({ model: MODEL_NAME });
 
   // create an initial draft of the document
-  const initStream = await new ChatAnthropic({
-    model: "claude-3-5-sonnet-latest",
-  })
-    .bindTools(tools)
+  const CreateTextDocumentTool = z.object({
+    title: z.string(),
+    description: z.string(),
+  });
+
+  const initStream = await model
+    .bindTools([
+      {
+        name: "create_text_document",
+        description:
+          "Prepare a text document for the user with a short title and short description for browsing purposes.",
+        schema: CreateTextDocumentTool,
+      } as const,
+    ])
     .stream(state.messages);
 
+  const id = uuidv4();
   let message: AIMessageChunk | undefined;
-  const artifactId = uuidv4();
 
   for await (const chunk of initStream) {
     message = message?.concat(chunk) ?? chunk;
 
-    const tool = findTool(message, "create_text_document")?.args;
+    const tool = message.tool_calls?.find(
+      findToolCall("create_text_document")<typeof CreateTextDocumentTool>,
+    )?.args;
+
     if (tool) {
       ui.push(
-        {
-          id: artifactId,
-          name: "writer",
-          props: { ...tool, isGenerating: true },
-        },
+        { id, name: "writer", props: { ...tool, isGenerating: true } },
         { message, merge: true },
       );
     }
   }
-  if (message) messages.push(message);
 
-  // great, now we can actually create a big document
-  const contentStream = await new ChatAnthropic({
-    model: "claude-3-5-sonnet-latest",
-  })
+  return { messages: message ? [message] : [] };
+}
+
+async function writer(
+  state: typeof GenerativeUIAnnotation.State,
+  config: LangGraphRunnableConfig,
+): Promise<typeof GenerativeUIAnnotation.Update> {
+  const ui = typedUi<typeof ComponentMap>(config);
+
+  const lastMessage = state.messages.at(-1);
+  const lastUi = state.ui.findLast(
+    (i) => i.name === "writer" && i.metadata.message_id === lastMessage?.id,
+  );
+
+  if (!lastUi || !lastMessage) return {};
+  const { id } = lastUi;
+
+  const contentStream = await new ChatAnthropic({ model: MODEL_NAME })
     .withConfig({ tags: ["nostream"] }) // do not stream to the UI
     .stream([
       {
         role: "system",
         content:
-          "Write a text document based on the user's request. Only output the content, do not ask any additional questions.",
+          "Write a text document based on the user's request. " +
+          "Only output the content, do not ask any additional questions.",
       },
-      ...state.messages,
+      ...state.messages.slice(0, -1),
     ]);
 
   let contentMessage: AIMessageChunk | undefined;
@@ -103,45 +98,46 @@ async function writer(
     const content = contentMessage?.text ?? "";
 
     ui.push(
-      {
-        id: artifactId,
-        name: "writer",
-        props: { content, isGenerating: true },
-      },
-      { message, merge: true },
+      { id, name: "writer", props: { content, isGenerating: true } },
+      { message: lastMessage, merge: true },
     );
   }
 
   ui.push(
-    { id: artifactId, name: "writer", props: { isGenerating: false } },
-    { message, merge: true },
+    { id, name: "writer", props: { isGenerating: false } },
+    { message: lastMessage, merge: true },
   );
 
-  for (const toolCall of message?.tool_calls ?? []) {
-    if (!toolCall.id) continue;
-    messages.push({
-      type: "tool",
-      content: "Finished",
-      tool_call_id: toolCall.id,
-    });
-  }
-
-  const finish = await new ChatAnthropic({
-    model: "claude-3-5-sonnet-latest",
-  }).invoke([
-    {
-      type: "system",
-      content:
-        "Add any additional actions the user may take after finishing up writing the document",
-    },
-    ...messages,
-  ]);
-  messages.push(finish);
-
-  return { messages };
+  return { messages: [] };
 }
 
-export const graph = new StateGraph(AgentState)
+async function suggestions(
+  state: typeof GenerativeUIAnnotation.State,
+): Promise<typeof GenerativeUIAnnotation.Update> {
+  const messages: BaseMessageLike[] = state.messages.slice();
+  const lastMessage = messages.at(-1);
+
+  if (!isBaseMessage(lastMessage) || !isAIMessage(lastMessage)) {
+    return {};
+  }
+
+  for (const tool of lastMessage.tool_calls ?? []) {
+    if (!tool.id) continue;
+    messages.push({ type: "tool", content: "Finished", tool_call_id: tool.id });
+  }
+
+  const model = new ChatAnthropic({ model: MODEL_NAME });
+  const finish = await model.invoke(messages);
+  messages.push(finish);
+
+  return { messages: messages };
+}
+
+export const graph = new StateGraph(GenerativeUIAnnotation)
+  .addNode("prepare", prepare)
   .addNode("writer", writer)
-  .addEdge(START, "writer")
+  .addNode("suggestions", suggestions)
+  .addEdge(START, "prepare")
+  .addEdge("prepare", "writer")
+  .addEdge("writer", "suggestions")
   .compile();
