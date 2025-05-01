@@ -66,10 +66,13 @@ export default function Plan(props: PlanProps) {
       <motion.button
         className="w-full py-2 border-t border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
-        animate={{ rotate: isExpanded ? 180 : 0 }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       >
-        <ChevronDown className="w-5 h-5 text-slate-600" />
+        <motion.span
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <ChevronDown className="w-5 h-5 text-slate-600" />
+        </motion.span>
       </motion.button>
     </div>
   );
