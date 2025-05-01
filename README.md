@@ -168,3 +168,11 @@ The allowed actions are:
 - `Respond` - If you send a text response back, it will be used to rewrite the email in some way, then interrupt again and wait for you to take an action.
 - `Ignore` - This will send back an `ignore` response, and the graph will end without taking any actions.
 - `Mark as resolved` - If you select this, it will resume the graph, but starting at the `__end__` node, causing the graph to end without taking any actions.
+
+## Writer Agent
+
+This is a dummy agent used to demonstrate how you can stream generative UI components as an artifact. It should be accessed via the `writer` graph ID. It should be accessed via the `agent` graph ID, which means you'll need to go through the Supervisor agent to access it. The following prompts will trigger the writer agent:
+
+- `Write me a short story about a <insert topic here>`
+
+This will render a generative UI component that contains the title and content of your short story. The generative UI component will be rendered in a side panel to the right of the chat and the contents of the story will be streamed to the UI as it is generated.
