@@ -29,22 +29,23 @@ export function useArtifact<TContext = Record<string, unknown>>() {
 
   const thread = useStreamContext<
     { messages: Message[]; ui: UIMessage[] },
-    { MetaType: { artifact: { content: Component } & Bag } }
+    { MetaType: { artifact: [Component, Bag] } }
   >();
 
   const noop = useMemo(
-    () => ({
-      content: () => null,
+    () =>
+      [
+        () => null,
+        {
+          open: false,
+          setOpen: () => void 0,
 
-      open: false,
-      setOpen: () => void 0,
-
-      context: {},
-      setContext: () => void 0,
-    }),
+          context: {} as TContext,
+          setContext: () => void 0,
+        },
+      ] as [Component, Bag],
     [],
   );
 
-  const { content, ...bag } = thread.meta?.artifact ?? noop;
-  return [content, bag] as [Component, Bag];
+  return thread.meta?.artifact ?? noop;
 }
