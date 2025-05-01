@@ -1,4 +1,5 @@
 import {
+  Annotation,
   START,
   StateGraph,
   type LangGraphRunnableConfig,
@@ -21,10 +22,19 @@ import type ComponentMap from "../../agent-uis/index";
 
 const MODEL_NAME = "claude-3-5-sonnet-latest";
 
+const WriterAnnotation = Annotation.Root({
+  messages: GenerativeUIAnnotation.spec.messages,
+  ui: GenerativeUIAnnotation.spec.ui,
+  context: Annotation<{ writer?: { selected?: string } } | undefined>(),
+});
+
+type WriterState = typeof WriterAnnotation.State;
+type WriterUpdate = Promise<typeof WriterAnnotation.Update>;
+
 async function prepare(
-  state: typeof GenerativeUIAnnotation.State,
+  state: WriterState,
   config: LangGraphRunnableConfig,
-): Promise<typeof GenerativeUIAnnotation.Update> {
+): WriterUpdate {
   const ui = typedUi<typeof ComponentMap>(config);
   const model = new ChatAnthropic({ model: MODEL_NAME });
 
@@ -37,13 +47,26 @@ async function prepare(
   const initStream = await model
     .bindTools([
       {
-        name: "create_text_document",
+        name: "draft_text_document",
         description:
-          "Prepare a text document for the user with a short title and short description for browsing purposes.",
+          "Prepare a text document for the user with a short title and short description for browsing purposes. " +
+          "Can be also used when creating a new version of the document.",
         schema: CreateTextDocumentTool,
       } as const,
     ])
-    .stream(state.messages);
+    .stream([
+      ...(state.context?.writer?.selected
+        ? [
+            {
+              type: "system" as const,
+              content: state.context.writer?.selected
+                ? `Selected text in question: ${state.context.writer?.selected}`
+                : "",
+            },
+          ]
+        : []),
+      ...state.messages,
+    ]);
 
   const id = uuidv4();
   let message: AIMessageChunk | undefined;
@@ -52,7 +75,7 @@ async function prepare(
     message = message?.concat(chunk) ?? chunk;
 
     const tool = message.tool_calls?.find(
-      findToolCall("create_text_document")<typeof CreateTextDocumentTool>,
+      findToolCall("draft_text_document")<typeof CreateTextDocumentTool>,
     )?.args;
 
     if (tool) {
@@ -67,9 +90,9 @@ async function prepare(
 }
 
 async function writer(
-  state: typeof GenerativeUIAnnotation.State,
+  state: WriterState,
   config: LangGraphRunnableConfig,
-): Promise<typeof GenerativeUIAnnotation.Update> {
+): WriterUpdate {
   const ui = typedUi<typeof ComponentMap>(config);
 
   const lastMessage = state.messages.at(-1);
@@ -87,7 +110,10 @@ async function writer(
         role: "system",
         content:
           "Write a text document based on the user's request. " +
-          "Only output the content, do not ask any additional questions.",
+          "Only output the content, do not ask any additional questions." +
+          (state.context?.writer?.selected
+            ? `\n\nSelected text in question: ${state.context.writer?.selected}`
+            : ""),
       },
       ...state.messages.slice(0, -1),
     ]);
@@ -111,9 +137,7 @@ async function writer(
   return { messages: [] };
 }
 
-async function suggestions(
-  state: typeof GenerativeUIAnnotation.State,
-): Promise<typeof GenerativeUIAnnotation.Update> {
+async function suggestions(state: WriterState): WriterUpdate {
   const messages: BaseMessageLike[] = state.messages.slice();
   const lastMessage = messages.at(-1);
 
@@ -133,7 +157,7 @@ async function suggestions(
   return { messages: messages };
 }
 
-export const graph = new StateGraph(GenerativeUIAnnotation)
+export const graph = new StateGraph(WriterAnnotation)
   .addNode("prepare", prepare)
   .addNode("writer", writer)
   .addNode("suggestions", suggestions)

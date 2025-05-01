@@ -8,13 +8,12 @@ export function Writer(props: {
   description?: string;
   isGenerating: boolean;
 }) {
-  const [Artifact, { open, setOpen }] = useArtifact();
-  const [content, setContent] = useState(props.content ?? "");
+  const [Artifact, { open, setOpen, setContext }] = useArtifact<{
+    writer?: { selected?: string };
+  }>();
 
-  // TODO: is there a cooler way how to avoid useEffect?
-  useEffect(() => {
-    setContent(props.content ?? "");
-  }, [props.content]);
+  const [content, setContent] = useState(props.content ?? "");
+  useEffect(() => setContent(props.content ?? ""), [props.content]);
 
   const prevOpened = useRef(false);
   const shouldAutoOpen = !open && content.length > 0 && props.isGenerating;
@@ -47,6 +46,16 @@ export function Writer(props: {
           className="absolute inset-0 w-full h-full p-4 outline-none"
           value={content}
           onChange={(e) => setContent(e.target.value)}
+          onSelect={(e) => {
+            const selectedText = e.currentTarget.value.substring(
+              e.currentTarget.selectionStart,
+              e.currentTarget.selectionEnd,
+            );
+            setContext((prevContext) => ({
+              ...prevContext,
+              writer: { ...prevContext?.writer, selected: selectedText },
+            }));
+          }}
         />
       </Artifact>
     </>

@@ -7,21 +7,28 @@ const NoopPreview = () => null;
 // eslint-disable-next-line react-refresh/only-export-components
 const NoopSetOpen = () => void 0;
 
-export const useArtifact = () => {
+// eslint-disable-next-line react-refresh/only-export-components
+const NoopSetContext = () => void 0;
+
+const NoopContext = {};
+
+export function useArtifact<TContext = Record<string, unknown>>() {
+  type Component = (props: {
+    children: React.ReactNode;
+    title?: React.ReactNode;
+  }) => React.ReactNode;
+  type Context = TContext | undefined;
+  type Bag = {
+    open: boolean;
+    setOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
+
+    context: Context;
+    setContext: (value: Context | ((prev: Context) => Context)) => void;
+  };
+
   const thread = useStreamContext<
     { messages: Message[]; ui: UIMessage[] },
-    {
-      MetaType: {
-        artifact: {
-          content: (props: {
-            children: React.ReactNode;
-            title?: React.ReactNode;
-          }) => React.ReactNode;
-          open: boolean;
-          setOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
-        };
-      };
-    }
+    { MetaType: { artifact: { content: Component } & Bag } }
   >();
 
   return [
@@ -29,6 +36,9 @@ export const useArtifact = () => {
     {
       open: thread.meta?.artifact?.open ?? false,
       setOpen: thread.meta?.artifact?.setOpen ?? NoopSetOpen,
+
+      context: thread.meta?.artifact?.context ?? NoopContext,
+      setContext: thread.meta?.artifact?.setContext ?? NoopSetContext,
     },
-  ] as const;
-};
+  ] as [Component, Bag];
+}

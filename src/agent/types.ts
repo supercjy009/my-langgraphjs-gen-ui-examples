@@ -11,6 +11,7 @@ export const GenerativeUIAnnotation = Annotation.Root({
     UIMessage[],
     UIMessage | RemoveUIMessage | (UIMessage | RemoveUIMessage)[]
   >({ default: () => [], reducer: uiMessageReducer }),
+  context: Annotation<Record<string, unknown> | undefined>,
   timestamp: Annotation<number>,
   next: Annotation<
     | "stockbroker"
