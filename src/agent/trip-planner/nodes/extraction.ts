@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatDeepSeek } from "@langchain/deepseek";
 import { TripDetails, TripPlannerState, TripPlannerUpdate } from "../types";
 import { z } from "zod";
 import { ToolMessage } from "@langchain/langgraph-sdk";
@@ -68,7 +68,7 @@ export async function extraction(
       ),
   });
 
-  const model = new ChatOpenAI({ model: "gpt-4o", temperature: 0 }).bindTools([
+  const model = new ChatDeepSeek({ model: "deepseek-chat", temperature: 0 }).bindTools([
     {
       name: "extract",
       description: "A tool to extract information from a user's request.",

@@ -1,5 +1,5 @@
 import { TripPlannerState, TripPlannerUpdate } from "../types";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatDeepSeek } from "@langchain/deepseek";
 import { typedUi } from "@langchain/langgraph-sdk/react-ui/server";
 import type ComponentMap from "../../../agent-uis/index";
 import { z } from "zod";
@@ -37,7 +37,7 @@ export async function callTools(
 
   const ui = typedUi<typeof ComponentMap>(config);
 
-  const llm = new ChatOpenAI({ model: "gpt-4o", temperature: 0 }).bindTools(
+  const llm = new ChatDeepSeek({ model: "deepseek-chat", temperature: 0 }).bindTools(
     ACCOMMODATIONS_TOOLS,
   );
 

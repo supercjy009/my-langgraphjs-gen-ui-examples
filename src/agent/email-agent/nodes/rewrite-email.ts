@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { EmailAgentState, EmailAgentUpdate } from "../types";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatDeepSeek } from "@langchain/deepseek";
 
 const REWRITE_EMAIL_PROMPT = `You're an AI email assistant, tasked with rewriting an email for the user.
 Here is the current state of the email for the user:
@@ -44,8 +44,8 @@ export async function rewriteEmail(
     throw new Error("Can not rewrite email if email is undefined.");
   }
 
-  const model = new ChatOpenAI({
-    model: "gpt-4o",
+  const model = new ChatDeepSeek({
+    model: "deepseek-chat",
     temperature: 0,
   }).bindTools(
     [

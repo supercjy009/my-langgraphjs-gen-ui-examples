@@ -1,4 +1,4 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatDeepSeek } from "@langchain/deepseek";
 import { TripPlannerState, TripPlannerUpdate } from "../types";
 import { z } from "zod";
 import { formatMessages } from "@/agent/utils/format-messages";
@@ -19,7 +19,7 @@ export async function classify(
       ),
   });
 
-  const model = new ChatOpenAI({ model: "gpt-4o", temperature: 0 }).bindTools(
+  const model = new ChatDeepSeek({ model: "deepseek-chat", temperature: 0 }).bindTools(
     [
       {
         name: "classify",

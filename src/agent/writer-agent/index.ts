@@ -4,7 +4,8 @@ import {
   StateGraph,
   type LangGraphRunnableConfig,
 } from "@langchain/langgraph";
-import { ChatAnthropic } from "@langchain/anthropic";
+// import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatDeepSeek } from "@langchain/deepseek";
 import { typedUi } from "@langchain/langgraph-sdk/react-ui/server";
 import {
   isAIMessage,
@@ -20,7 +21,8 @@ import { GenerativeUIAnnotation } from "../types";
 
 import type ComponentMap from "../../agent-uis/index";
 
-const MODEL_NAME = "claude-3-5-sonnet-latest";
+// const MODEL_NAME = "claude-3-5-sonnet-latest";
+const MODEL_NAME = "deepseek-chat";
 
 const WriterAnnotation = Annotation.Root({
   messages: GenerativeUIAnnotation.spec.messages,
@@ -36,7 +38,7 @@ async function prepare(
   config: LangGraphRunnableConfig,
 ): WriterUpdate {
   const ui = typedUi<typeof ComponentMap>(config);
-  const model = new ChatAnthropic({ model: MODEL_NAME });
+  const model = new ChatDeepSeek({ model: MODEL_NAME });
 
   // create an initial draft of the document
   const CreateTextDocumentTool = z.object({
@@ -103,7 +105,7 @@ async function writer(
   if (!lastUi || !lastMessage) return {};
   const { id } = lastUi;
 
-  const contentStream = await new ChatAnthropic({ model: MODEL_NAME })
+  const contentStream = await new ChatDeepSeek({ model: MODEL_NAME })
     .withConfig({ tags: ["nostream"] }) // do not stream to the UI
     .stream([
       {
@@ -150,7 +152,7 @@ async function suggestions(state: WriterState): WriterUpdate {
     messages.push({ type: "tool", content: "Finished", tool_call_id: tool.id });
   }
 
-  const model = new ChatAnthropic({ model: MODEL_NAME });
+  const model = new ChatDeepSeek({ model: MODEL_NAME });
   const finish = await model.invoke(messages);
   messages.push(finish);
 

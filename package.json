@@ -22,6 +22,7 @@
     "@faker-js/faker": "^9.5.1",
     "@langchain/anthropic": "^0.3.18",
     "@langchain/core": "^0.3.45",
+    "@langchain/deepseek": "^0.1.0",
     "@langchain/google-genai": "^0.1.10",
     "@langchain/langgraph": "^0.2.64",
     "@langchain/langgraph-checkpoint": "^0.0.17",
