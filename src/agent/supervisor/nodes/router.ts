@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-// import { ChatDeepSeek } from "@langchain/deepseek";
+import { ChatDeepSeek } from "@langchain/deepseek";
 import { ALL_TOOL_DESCRIPTIONS } from "../index";
 import { SupervisorState, SupervisorUpdate } from "../types";
 import { formatMessages } from "@/agent/utils/format-messages";
@@ -30,9 +30,9 @@ ${ALL_TOOL_DESCRIPTIONS}
     schema: routerSchema,
   };
 
-  const llm = new ChatGoogleGenerativeAI({
-    model: "gemini-2.0-flash",
-    // model: "deepseek-chat",
+  const llm = new ChatDeepSeek({
+    // model: "gemini-2.0-flash",
+    model: "deepseek-chat",
     temperature: 0,
   })
     .bindTools([routerTool], { tool_choice: "router" })
@@ -61,18 +61,18 @@ Please pick the proper route based on the most recent message, in the context of
     { role: "system", content: prompt },
     { role: "user", content: humanMessage },
   ]);
-  // console.log(response);
+  console.log(response);
   
   // const toolCall = response.tool_calls?.[0]?.args as
   //   | z.infer<typeof routerSchema>
   //   | undefined;
-  const toolCall = response.tool_call_chunks?.[0]?.args as
+  const toolCall = response.tool_calls?.[0]?.args as
   | z.infer<typeof routerSchema>
   | undefined;
   if (!toolCall) {
     throw new Error("No tool call found in response");
   }
   return {
-    next: JSON.parse(toolCall).route,
+    next: toolCall.route,
   };
 }
