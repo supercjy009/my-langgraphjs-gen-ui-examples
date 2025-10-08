@@ -1,0 +1,8 @@
+langchain-deepseek>=0.1.4
+langgraph>=0.2.6
+langgraph-sdk>=0.2.9
+python-dotenv>=1.0.1
+
+[dev]
+mypy>=1.11.1
+ruff>=0.6.1
