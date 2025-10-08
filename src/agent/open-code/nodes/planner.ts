@@ -19,6 +19,8 @@ export async function planner(
   state: OpenCodeState,
   config: LangGraphRunnableConfig,
 ): Promise<OpenCodeUpdate> {
+  console.log("planner running");
+  
   const ui = typedUi<typeof ComponentMap>(config);
 
   const lastUpdateCodeToolCall = state.messages.findLast(

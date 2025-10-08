@@ -13,8 +13,8 @@ export async function executor(
   state: OpenCodeState,
   config: LangGraphRunnableConfig,
 ): Promise<OpenCodeUpdate> {
+  console.log("executor running");
   const ui = typedUi<typeof ComponentMap>(config);
-
   const lastPlanToolCall = state.messages.findLast(
     (m) =>
       m.getType() === "ai" &&
